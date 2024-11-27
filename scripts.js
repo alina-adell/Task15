@@ -22,57 +22,54 @@ Promise.all(
         specializations = response[2];
 
 
-        getInfo.call(person);
-
-        const userFigma = person.filter(item => {
-            const specialization = specializations.find(spec => spec.id === item.personal.specializationId);
-            return specialization?.name === 'designer' && item.skills.some(skill => skill.name === 'Figma');
+        person.forEach((per) => {
+            getInfo.call(per);
         });
-        console.log("Дизайнеры, владеющие Figma:");
-        userFigma.forEach(personItem => {
-            getInfo.call(personItem);
-        });
-
-        const userReact = person
-            .find(item => {
-                return item.skills.some(skill => skill.name === 'React');
-            });
-
-        if (userReact) {
-            console.log(`Первый разработчик, владеющий React:`);
-            console.log(`Имя: ${userReact.personal.firstName} ${userReact.personal.lastName}`);
-        } else {
-            console.log('Разработчиков, владеющих React, не найдено.');
-        }
-
+        findFigmaDesigner();
+        findReactDeveloper();
         userAge();
-        getBackendEmployeesInMoscow();
-        console.log(findDesigners());
-        buildProjectTeam();
 
+        const backendEmployees = getBackendEmployeesInMoscow();
+        console.log("Backend-разработчики из Москвы, с полной занятостью:");
+        console.log(backendEmployees);
+
+        const designers = findDesigners();
+        console.log("Дизайнеры, владеющие Photoshop и Figma с уровнем 6+:");
+        console.log(designers);
+
+        buildProjectTeam();
     });
 
+
 function getInfo() {
-    if (Array.isArray(this)) {
-        this.forEach(item => {
-            if (!item.personal) {
-                console.log("Некорректные данные");
-                return;
-            }
-            let {firstName, lastName, locationId} = item.personal;
-            let city = cities.find(cityItem => cityItem.id === locationId);
-            if (city && city.name) {
-                item.personal.locationId = city.name;
-            }
-            console.log(`${firstName} ${lastName}, ${item.personal.locationId}`);
-        });
+    let {firstName, lastName, locationId} = this?.personal || {};
+    let city = cities.find(cityItem => cityItem.id === locationId);
+    if (city && city.name) {
+        this.personal.cityName = city.name;
+    }
+    console.log(`${firstName} ${lastName},  ${this.personal.cityName}`);
+}
+
+function findFigmaDesigner() {
+    const userFigma = person.filter(item => {
+        const specialization = specializations.find(spec => spec.id === item.personal.specializationId);
+        return specialization?.name === 'designer' && item.skills.some(skill => skill.name === 'Figma');
+    });
+    console.log("Дизайнеры, владеющие Figma:");
+    userFigma.forEach(designer => {
+        getInfo.call(designer);
+    });
+}
+
+function findReactDeveloper() {
+    const userReact = person.find(item =>
+        item.skills.some(skill => skill.name === 'React')
+    );
+    if (userReact) {
+        console.log(`Первый разработчик, владеющий React:`);
+        getInfo.call(userReact);
     } else {
-        let {firstName, lastName, locationId} = this?.personal || {};
-        let city = cities.find(cityItem => cityItem.id === locationId);
-        if (city && city.name) {
-            this.personal.locationId = city.name;
-        }
-        console.log(`${firstName} ${lastName}, ${this.personal.locationId}`);
+        console.log('Разработчиков, владеющих React, не найдено.');
     }
 }
 
@@ -99,10 +96,6 @@ function getBackendEmployeesInMoscow() {
                 .find(cityItem => cityItem.id === item.personal.locationId);
             const specialization = specializations
                 .find(spec => spec.id === item.personal.specializationId);
-            // console.log("Checking item:", item.personal.firstName, item.personal.lastName);
-            // console.log("  Specialization:", specialization?.name === 'backend');
-            // console.log("  City:", city?.name === 'Москва') ;
-            // console.log("  Is Full Time:", isFullTime);
             return specialization?.name === 'backend' && city?.name === 'Москва' && isFullTime;
         })
 
@@ -137,6 +130,7 @@ function findDesigners() {
         skills: item.skills.filter(skill => skill.name === "Photoshop" || skill.name === "Figma")
     }));
 }
+
 function buildProjectTeam() {
     const bestDesigner = person
         .filter(item => item.skills.some(skill => skill.name === "Figma"))
